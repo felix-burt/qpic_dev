@@ -1,0 +1,109 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing,decorations.markings}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+
+# DQC definitions
+
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+
+
+a b DEFINE epr a epr b a:color=black b:color=black
+a b DEFINE starting +b start1 +a b:color=black op=0:shape=>:size=0
+a b DEFINE ending +b start2 +a a:color=white op=0:shape=>:size=0
+a b DEFINE ending_nst +b start1 +a w:color=white op=0:shape=>:size=0
+
+
+# CPhase gate definitions for different labels
+
+# Blank cphase
+a b DEFINE cphase a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {};}},decorate}
+
+# Named cphase gates
+a b DEFINE cphase_alpha a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\alpha$};}},decorate}
+a b DEFINE cphase_beta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\beta$};}},decorate}
+a b DEFINE cphase_gamma a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\gamma$};}},decorate}
+a b DEFINE cphase_delta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\delta$};}},decorate}
+a b DEFINE cphase_phi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\phi$};}},decorate}
+a b DEFINE cphase_theta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\theta$};}},decorate}
+a b DEFINE cphase_omega a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\omega$};}},decorate}
+a b DEFINE cphase_psi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\psi$};}},decorate}
+
+
+a W q_{0}
+a1 W q_{1}
+b W e_{0,0} color=white
+style=white buf0 W 
+c W e_{1,0} color=white
+c1 W q_{2}
+c2 W q_{3}
+e W e_{1,1} color=white
+style=white buf2 W 
+f W e_{2,0} color=white
+g W q_{4}
+
+h W e_{2,1} color=white
+style=white buf3 W 
+i W e_{3,0} color=white
+j W q_{5}
+
+
+
+
+a b @ 0 14 color=black style=dashed,rounded_corners=5pt,fill=red!20
+
+c e @ 0 14 color=black style=dashed,rounded_corners=5pt,fill=blue!20
+
+f h @ 0 14 color=black style=dashed,rounded_corners=5pt,fill=green!20
+
+i j @ 0 14 color=black style=dashed,rounded_corners=5pt,fill=yellow!20
+
+b c epr
+a +b
+e f epr
+c +e
+
+h i epr
+
+f +h
+
+b M
+e M
+h M
+b +e +h
+b +c b:owire
+e +f e:owire
+h +i h:owire
+
+a c f i >= $\alpha\ket{0}^{\otimes 4} + \beta\ket{1}^{\otimes 4}$ width=90
+
+
+a a1 cphase_theta 
+
+a H
+a M 
+
+c Z a:owire
+
+c c1 cphase_alpha
+c c2 cphase_delta
+f g cphase_beta
+i j cphase_gamma
+
+i H 
+i M
+
+f Z i:owire
+
+
+c H
+c M 
+
+
+f Z c:owire
+
+
+
+
+
+

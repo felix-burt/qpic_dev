@@ -718,7 +718,10 @@ def draw_xor(x,y,options):
         num_sides = 0
         thick_line = ""
     if shape_line:
-        print(("\\draw[fill=%s] " % fillcolor) + shape_line);
+        if fillcolor is None:
+            print("\\draw " + shape_line);
+        else:
+            print(("\\draw[fill=%s] " % fillcolor) + shape_line);
         if thick_line:
             print("\\draw[very thick,solid] " + thick_line)
         print("\\clip " + shape_line);
@@ -887,6 +890,14 @@ def make_scope_str(color=None,style=None):
     if style:
         opts.append(style)
     return ",".join(opts)
+
+def is_white_color(color):
+    if color is None:
+        return False
+    normalized = color.strip().lower()
+    if normalized.startswith('{') and normalized.endswith('}'):
+        normalized = normalized[1:-1].strip()
+    return normalized == 'white'
 
 class Depth:
     def __init__(self, depth_to_copy=None, direction=1):
@@ -1277,7 +1288,10 @@ class Wire:
         transitions.append(wirelen)
         print(self.input_line)
         for i in range(len(transitions) - 1):
-            tikz_str = 'color=%s' % self.get_color(transitions[i])
+            color = self.get_color(transitions[i])
+            if is_white_color(color):
+                continue
+            tikz_str = 'color=%s' % color
             style_str = self.get_style(transitions[i])
             wire_type = self.get_type(transitions[i])
             start_loc = self.location(transitions[i])
@@ -1319,7 +1333,10 @@ class Wire:
             self.draw_start_label(0)
         
     def fix_wire(self, pos1, pos2, tikz_str=None):
-        big_tikz_str = "color=%s" % self.get_color(pos1)
+        color = self.get_color(pos1)
+        if is_white_color(color):
+            return
+        big_tikz_str = "color=%s" % color
         if tikz_str:
             big_tikz_str += "," + tikz_str
         style_str = self.get_style(pos1)
@@ -1947,9 +1964,9 @@ class Gate:
                     for (start, end) in wire_ranges:
                         print(draw_command + " (%f,%f) -- (%f,%f);" % (get_x_y(pos,start) + get_x_y(pos,end)))
             elif self.type == 'LABEL':
-                tikz_str = "fill=%s" % bgcolor
+                tikz_str = ""
                 if orientation == 'vertical':
-                    tikz_str += ", rotate around={-90:(0,0)}"
+                    tikz_str = "rotate around={-90:(0,0)}"
                 for i in range(len(self.targets)):
                     wires[self.targets[i]].draw_label(pos, self.labels[i], tikz_str)
             elif self.type in EQUALS:
@@ -2031,9 +2048,9 @@ class Gate:
                     forward *= dir
                     for target in self.targets:
                         if forward == 1:
-                            wires[target].draw_start_label(pos + 0.5*self.get_length(), "fill=%s" % bgcolor,length=self.get_length())
+                            wires[target].draw_start_label(pos + 0.5*self.get_length(), length=self.get_length())
                         else:
-                            wires[target].draw_end_label(pos - 0.5*self.get_length(), "fill=%s" % bgcolor,length=self.get_length())
+                            wires[target].draw_end_label(pos - 0.5*self.get_length(), length=self.get_length())
                 elif self.type in ['N', 'M','/']:
                     for target in self.targets:
                         (x,y) = get_x_y(pos, wires[target].location(pos))
@@ -2264,9 +2281,38 @@ def print_circuit(circuit_length, cut_lines):
     for col in new_colors:
         print("\\definecolor{%s}{rgb}{%s,%s,%s}" % (col[0], col[1], col[2], col[3]))
     print("\\begin{tikzpicture}[scale=%f,x=1pt,y=1pt]" % overall_scale)
-    print("\\filldraw[color=%s] (%f, %f) rectangle (%f, %f);" % ((bgcolor,) + get_x_y(0, circuit_bottom) + get_x_y(circuit_length, circuit_top)))
+    if not is_white_color(bgcolor):
+        print("\\filldraw[color=%s] (%f, %f) rectangle (%f, %f);" % ((bgcolor,) + get_x_y(0, circuit_bottom) + get_x_y(circuit_length, circuit_top)))
     for pre in pretikz_list:
         print(pre)
+    # draw highlight regions first so wires and gates render on top
+    print("% Drawing highlight regions")
+    for (start, end, targets, comment0, comment1, input_line, brace_options) in braces_list:
+        has_region = brace_options.get('style', None) or brace_options.get('fill', None)
+        if not has_region:
+            continue
+        start_pos = master_depth_list[start].start_position + 0.5*DEPTH_PAD
+        end_pos = master_depth_list[end].end_position - 0.5*DEPTH_PAD
+        if targets:
+            tops = []
+            bottoms = []
+            for wn in targets:
+                if wn in wires:
+                    wname = wn
+                else:
+                    wname = get_wire_name(wn, return_prefix=0, create_wire=0)
+                    if not wname:
+                        sys.exit("Error:  Line %i:  Unknown wire %s" % (line_num, wn))
+                tops.append(wires[wname].location(start_pos) + 0.5*wires[wname].get_breadth())
+                bottoms.append(wires[wname].location(start_pos) - 0.5*wires[wname].get_breadth())
+            top_location = max(tops)
+            bottom_location = min(bottoms)
+        else:
+            top_location = circuit_top
+            bottom_location = circuit_bottom
+        corner1 = get_x_y(start_pos, top_location)
+        corner2 = get_x_y(end_pos, bottom_location)
+        draw_highlight_region(corner1, corner2, brace_options)
     # draw in the wires
     print("% Drawing wires")
     # sort the wires so different versions of python have the same wire order
@@ -2328,9 +2374,6 @@ def print_circuit(circuit_length, cut_lines):
             top_location = circuit_top
             bottom_location = circuit_bottom
         if brace_options.get('style', None) or brace_options.get('fill', None):
-            corner1 = get_x_y(start_pos, top_location)
-            corner2 = get_x_y(end_pos, bottom_location)
-            draw_highlight_region(corner1, corner2, brace_options)
             delta = 0
         else:
             delta = BRACE_AMPLITUDE
@@ -2344,10 +2387,6 @@ def print_circuit(circuit_length, cut_lines):
                 draw_brace(start_pos, end_pos, bottom_location, -delta, color=brace_color)
             (x,y) = get_x_y(0.5*(start_pos + end_pos), bottom_location - delta)
             draw_comment(comment1, x, y, directions[1], color=brace_color)
-        if brace_options.get('style', None) or brace_options.get('fill', None):
-            corner1 = get_x_y(start_pos, top_location)
-            corner2 = get_x_y(end_pos, bottom_location)
-            draw_highlight_region(corner1, corner2, brace_options)
     print("% Done with comments")
     for post in posttikz_list:
         print(post)

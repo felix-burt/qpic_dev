@@ -1,0 +1,112 @@
+x W {} {} {\ket{0}} {}
+y W {} {} {\ket{0}} {a_0}
+buf1 W 
+buf2 W 
+z W {} {} {\ket{0}} {b_0}
+w W {} {} {\ket{0}} {a_1}
+a W {} {} {} {}
+b W {} {} {} {}
+c W {} {} {} {b_1}
+buf3 W color=white
+buf4 W color=white
+buf5 W color=white
+
+d W color=white {} {} {a_{n-1}}
+e W color=white
+f W color=white 
+g W color=white {} {} {\ket{0}} {b_{n-1}}
+h W color=white {} {} {\ket{0}}
+
+
+
+
+x START x:color=white
+y START y:color=white
+z START z:color=white
+w START w:color=white
+buf1 START buf1:color=white; buf1 END
+buf2 START buf2:color=white; buf2 END
+a START a:color=white
+b START b:color=white
+f START f:color=white
+g START g:color=white
+
+
+
+x y G {Bell Prepare} width=65 x:color=black y:color=black
+z w G {Bell Prepare} width=65 z:color=black w:color=black
+g h G {Bell Prepare} width=65 h:color=black g:color=black
+
+
+c START c:color=black; d START d:color=black; x buf1 y z buf2 a w c b e d g f h PERMUTE
+
+y z G {Bell Measure} width=65 z:color=white y:color=white
+w c G {Bell Measure} width=65 w:color=white c:color=white
+g d G {Bell Measure} width=65 d:color=white g:color=white
+
+
+
+
+x y z w c b e g f h END
+
+= 
+
+x y buf1 buf2 z w a b c d e f g h PERMUTE
+
+x START x:color=black
+y START y:color=black
+z START z:color=black
+w START w:color=black
+a START a:color=white
+b START b:color=white
+f START f:color=white
+g START g:color=black
+h START h:color=black
+
+x G $H$
+x +y
+
+z G $H$
+z +w
+
+g G $H$
+g +h
+
+
+c START c:color=black; d START d:color=black; x buf1 y z buf2 a w c b e d g f h PERMUTE
+
+y +z
+y G $H$
+y M; z M
+
+w +c
+w G $H$
+w M; c M
+
+d +g
+d G $H$
+d M; g M
+
+x y z w b c f d g END
+
+x h >= $X^{b_0 \oplus ... \oplus b_{n-1}}Z^{a_0  \oplus ... \oplus a_{n-1}}\frac{1}{\sqrt{2}}(\ket{00}+\ket{11})$ width=200
+
+
+
+x y @ 7 9 color=black style=dashed,rounded_corners=4pt
+z w @ 7 9 color=black style=dashed,rounded_corners=4pt
+h g @ 7 9 color=black style=dashed,rounded_corners=4pt
+
+
+
+y z @ 11 13 color=black style=dashed,rounded_corners=4pt
+w c @ 11 13 color=black style=dashed,rounded_corners=4pt
+d g @ 11 13 color=black style=dashed,rounded_corners=4pt
+
+
+
+
+
+
+
+

@@ -1,0 +1,30 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing,decorations.markings}
+
+# DQC definitions
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+
+# Original 2-target versions
+a b DEFINE starting +b start1 +a b:color=black op=0:shape=>:size=0
+a b DEFINE ending +b start2 +a a:color=white op=0:shape=>:size=0
+a b DEFINE ending_nst +b start1 +a a:color=white op=0:shape=>:size=0
+
+# New multi-target versions using TOUCH
+a b c DEFINE starting3 a b c TOUCH a:op=0:shape=>:size=0 b:op=0:shape=>:size=0:color=black c:op=0:shape=>:size=0:color=black style=start1
+a b c DEFINE ending3 a b c TOUCH a:op=0:shape=>:size=0:color=white b:op=0:shape=>:size=0 c:op=0:shape=>:size=0 style=start2  
+
+# Test wires
+q0 W q_0
+q1 W q_1
+q2 W q_2
+q3 W q_3
+
+# Test original 2-target
+q0 q1 starting
+
+# Test 3-target with new approach
+q0 q1 q2 starting3
+
+# Test ending
+q2 q3 ending

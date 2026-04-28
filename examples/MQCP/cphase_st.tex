@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage[pdftex,active,tightpage]{preview}
+\usepackage{tikz}
+%\usepackage{geometry}
+\begin{document}
+\begin{preview}
+\usetikzlibrary{decorations.pathmorphing,decorations.markings}
+\providecommand{\ket}[1]{\left|#1\right\rangle}
+\begin{tikzpicture}[scale=1.000000,x=1pt,y=1pt]
+\filldraw[color=white] (0.000000, -7.500000) rectangle (54.000000, 37.500000);
+% Drawing wires
+% Line 41: a W q
+\draw[color=black] (0.000000,30.000000) -- (27.000000,30.000000);
+\draw[color=white] (27.000000,30.000000) -- (54.000000,30.000000);
+\draw[color=black] (0.000000,30.000000) node[left] {$q$};
+% Line 42: b W \ket{0} color=white
+\draw[color=white] (0.000000,15.000000) -- (9.000000,15.000000);
+\draw[color=black] (9.000000,15.000000) -- (54.000000,15.000000);
+\draw[color=white] (0.000000,15.000000) node[left] {$\ket{0}$};
+% Line 43: c W q'
+\draw[color=black] (0.000000,0.000000) -- (54.000000,0.000000);
+\draw[color=black] (0.000000,0.000000) node[left] {$q'$};
+% Done with wires; drawing gates
+% Line 48: a b starting
+\draw[->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (9.000000,30.000000) -- (9.000000,15.000000);
+\begin{scope}
+\draw[fill=white] (9.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (9.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+\begin{scope}
+\draw[fill=white] (9.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (9.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+\begin{scope}
+\draw[fill=white] (9.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (9.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+% Line 50: a b ending_nst
+\draw[->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (27.000000,30.000000) -- (27.000000,15.000000);
+\begin{scope}
+\draw[fill=white] (27.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (27.000000, 15.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+\begin{scope}
+\draw[fill=white] (27.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (27.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+\begin{scope}
+\draw[fill=white] (27.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\clip (27.000000, 30.000000) +(0.000000:0.000000pt) -- +(120.000000:0.000000pt) -- +(240.000000:0.000000pt) -- cycle;
+\end{scope}
+% Line 53: b c cphase_theta
+\draw[postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\theta$};}},decorate}] (45.000000,15.000000) -- (45.000000,0.000000);
+\filldraw (45.000000, 15.000000) circle(1.500000pt);
+\filldraw (45.000000, 0.000000) circle(1.500000pt);
+% Done with gates; drawing ending labels
+% Done with ending labels; drawing cut lines and comments
+% Done with comments
+\end{tikzpicture}
+\end{preview}
+\end{document}

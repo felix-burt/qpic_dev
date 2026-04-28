@@ -1,0 +1,44 @@
+x W \alpha\ket{0}+\beta\ket{1} {} {} {a}
+y W \ket{0} {} {\ket{0}} {b}
+z W \ket{0} {} {\ket{0}} X^{b}Z^{a}(\alpha\ket{0}+\beta\ket{1})
+
+x START
+y START y:color=white
+z START z:color=white
+
+y z G {Bell Prepare} width=65 z:color=black y:color=black
+x y G {Bell Measure} width=65 x:color=white y:color=white
+
+
+
+x y z END
+
+= 
+
+x START x:color=black
+y START y:color=black
+z START z:color=black
+
+y G $H$
+y +z
+
++y x 
+x H
+x M; y M 
+
+%z X y:owire
+%z Z x:owire 
+
+x END
+y END
+z END
+
+
+y z @ 5 7 color=black style=dashed,rounded_corners=4pt
+x y @ 8 10 color=black style=dashed,rounded_corners=4pt
+
+
+
+
+
+

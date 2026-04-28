@@ -1,0 +1,6 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing}
+
+a W \ket{0}
+b W \ket{0}
+
+a b CPHASE 

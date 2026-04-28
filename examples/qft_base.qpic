@@ -1,0 +1,28 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+x y DEFINE starting1 +y start1 +x op=0:shape=>:size=0
+x y DEFINE starting2 +y start2 +x op=0:shape=>:size=0
+
+a W q_5
+b W q_4
+c W q_3
+d W q_2
+e W q_1
+f W q_0
+
+f H
+f e 
+f d; e H
+f c; e d
+f b; e c; d H
+f a; e b; d c
+e a; d b; c H 
+d a; c b;
+c a; b H;
+b a; 
+a H
+
+%CUT 1 2 3 4 5 6 7 8 9 10
+

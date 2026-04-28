@@ -1,0 +1,21 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+x DEFINE endwire x:color=white x:size=0 
+x DEFINE startwire x:color=black x:size=0 
+
+a W \ket{0} 
+b W \ket{0} 
+a H
+a +b
+
+a endwire
+b endwire
+
+= 
+
+
+
+a epr b a:color=black b:color=black
+
+a b W >\ket{\Phi^{+}}

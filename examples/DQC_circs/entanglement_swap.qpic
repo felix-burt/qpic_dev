@@ -1,0 +1,54 @@
+x W {} {} {\ket{0}} {}
+y W {} {} {\ket{0}} {a}
+%buf W 
+z W {} {} {\ket{0}} {b}
+w W {} {} {\ket{0}} {}
+
+x START x:color=white
+y START y:color=white
+z START z:color=white
+w START w:color=white
+%buf START buf:color=white; buf END
+
+x y G {Bell Prepare} width=65 x:color=black y:color=black
+z w G {Bell Prepare} width=65 z:color=black w:color=black
+
+y z G {Bell Measure} width=65 z:color=white y:color=white
+
+x y z w END
+
+= 
+
+x START x:color=black
+y START y:color=black
+z START z:color=black
+w START w:color=black
+
+x G $H$
+x +y
+
+z G $H$
+z +w
+
+y +z
+y G $H$
+y M; z M
+
+
+x y z w END
+
+x w >= $X^{b}Z^{a}\frac{1}{\sqrt{2}}(\ket{00}+\ket{11})$ width=120
+
+
+
+x y @ 5 7 color=black style=dashed,rounded_corners=4pt
+z w @ 5 7 color=black style=dashed,rounded_corners=4pt
+
+y z @ 8 10 color=black style=dashed,rounded_corners=4pt
+
+
+
+
+
+
+

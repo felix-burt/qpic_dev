@@ -1,0 +1,28 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+a b DEFINE starting1 +b start1 +a op=0:shape=>:size=0
+a b DEFINE starting2 +b start2 +a op=0:shape=>:size=0
+
+x W \alpha\ket{0}+\beta\ket{1}
+y W \ket{0} color=white
+z W \ket{0} color=white
+a W \phi_{0} 
+b W \phi_{1}
+
+y epr z y:color=black z:color=black
++y x 
+y M 
+z X y:owire
+
+z a
+z b
+
+z H
+z M 
+x Z z:owire
+
+
+

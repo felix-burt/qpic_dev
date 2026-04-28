@@ -73,3 +73,5 @@ doc/*.pdf
 # Editor files
 *~
 *.swp
+
+*claude/

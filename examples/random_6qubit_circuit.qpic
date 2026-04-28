@@ -1,0 +1,83 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing,decorations.markings}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+
+# DQC definitions
+
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+
+a b DEFINE starting +b start1 +a b:color=black op=0:shape=>:size=0
+a b DEFINE ending +b start2 +a a:color=white op=0:shape=>:size=0
+a b DEFINE ending_nst +b start1 +a w:color=white op=0:shape=>:size=0
+
+# CPhase gate definitions for different labels
+
+# Blank cphase
+a b DEFINE cphase a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {};}},decorate}
+
+# Named cphase gates
+a b DEFINE cphase_alpha a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\alpha$};}},decorate}
+a b DEFINE cphase_beta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\beta$};}},decorate}
+a b DEFINE cphase_gamma a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\gamma$};}},decorate}
+a b DEFINE cphase_delta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\delta$};}},decorate}
+a b DEFINE cphase_phi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\phi$};}},decorate}
+a b DEFINE cphase_theta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\theta$};}},decorate}
+a b DEFINE cphase_omega a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\omega$};}},decorate}
+a b DEFINE cphase_psi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\psi$};}},decorate}
+
+# 6-qubit random circuit
+
+# Initialize 6 qubits
+q0 W \ket{0}
+q1 W \ket{0}
+q2 W \ket{0}
+q3 W \ket{0}
+q4 W \ket{0}
+q5 W \ket{0}
+
+# Layer 1: Single qubit gates (smaller)
+q0 G $$ size=8
+q2 G $$ size=8
+q4 G $$ size=8
+
+# Layer 2: Controlled phase gates
+q0 q1 cphase_alpha
+q3 q4 cphase
+
+# Layer 3: More smaller gates
+q1 G $$ size=8
+q3 G $$ size=8
+q5 G $$ size=8
+
+# Layer 4: Different controlled phase pairs
+q1 q2 cphase_beta
+q4 q5 cphase_gamma
+
+# Layer 5: Smaller gates on different qubits
+q0 G $$ size=8
+q2 G $$ size=8
+q4 G $$ size=8
+
+# Layer 6: Long-range controlled phase
+q0 q3 cphase
+q2 q5 cphase_delta
+
+# Layer 7: More smaller gates
+q1 G $$ size=8
+q3 G $$ size=8
+q5 G $$ size=8
+
+# Layer 8: Another set of controlled phases
+q0 q2 cphase_phi
+q1 q4 cphase
+
+# Layer 9: Final smaller gates
+q0 G $$ size=8
+q1 G $$ size=8
+q2 G $$ size=8
+q5 G $$ size=8
+
+# Layer 10: Final controlled phase gates
+q2 q3 cphase_theta
+q4 q5 cphase_omega

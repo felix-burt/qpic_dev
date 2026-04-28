@@ -1,0 +1,52 @@
+PREAMBLE \usetikzlibrary{decorations.pathmorphing,decorations.markings}
+PREAMBLE \providecommand{\ket}[1]{\left|#1\right\rangle}
+
+# DQC definitions
+
+DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
+DEFINE start_down style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
+
+
+a b DEFINE epr a epr b a:color=black b:color=black
+a b DEFINE starting +b start1 +a b:color=black op=0:shape=>:size=0
+a b DEFINE starting_up +a start2 +b b:color=black op=0:shape=>:size=0
+a b DEFINE ending +b start2 +a a:color=white op=0:shape=>:size=0
+a b DEFINE ending_nst +b start1 +a a:color=white op=0:shape=>:size=0
+
+# Multi-target snake line definitions with different arrow types
+targets DEFINE snake_right targets start1 op=0:shape=>:size=0
+targets DEFINE snake_left targets start2 op=0:shape=>:size=0  
+targets DEFINE snake_down targets start_down op=0:operator="\draw[->,thick] (0,0.1) -- (0,-0.1);":size=0
+
+
+# CPhase gate definitions for different labels
+
+# Blank cphase
+a b DEFINE cphase a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {};}},decorate}
+
+# Named cphase gates
+a b DEFINE cphase_alpha a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\alpha$};}},decorate}
+a b DEFINE cphase_beta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\beta$};}},decorate}
+a b DEFINE cphase_gamma a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\gamma$};}},decorate}
+a b DEFINE cphase_delta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\delta$};}},decorate}
+a b DEFINE cphase_phi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\phi$};}},decorate}
+a b DEFINE cphase_theta a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\theta$};}},decorate}
+a b DEFINE cphase_omega a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\omega$};}},decorate}
+a b DEFINE cphase_psi a b style=postaction={decoration={markings,mark=at position 0.5 with {\node[circle, draw, fill=white, inner sep=0.8pt, font=\scriptsize] {$\psi$};}},decorate}
+
+
+# Test file for the controlled phase gate
+a W q
+b W \ket{0} color=white
+c W q'
+
+# Define the controlled phase gate - simple version
+
+# Test controlled phase gates
+a b starting
+
+b c cphase_theta
+
+b a ending

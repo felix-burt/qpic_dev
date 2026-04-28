@@ -1,0 +1,121 @@
+\documentclass[tikz]{standalone}
+\usepackage{tikz}
+\usepackage{pgf}
+
+% Define the pgf layers
+\pgfdeclarelayer{nodelayer}
+\pgfdeclarelayer{edgelayer}
+\pgfsetlayers{main,nodelayer,edgelayer}
+
+% Define the black1 style (assuming it's a filled black circle)
+\tikzset{
+    black1/.style={circle, fill=black, inner sep=2pt, minimum size=12pt},
+    none/.style={inner sep=0pt, minimum size=0pt}
+}
+
+\begin{document}\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=black1] (0) at (0, 9) {};
+		\node [style=black1] (1) at (4, 3) {};
+		\node [style=black1] (2) at (0, 7) {};
+		\node [style=none] (3) at (4, 7) {};
+		\node [style=none] (4) at (0, 1) {};
+		\node [style=black1] (5) at (4, 1) {};
+		\node [style=none] (6) at (0, -1) {};
+		\node [style=none] (7) at (4, -1) {};
+		\node [style=black1] (8) at (8, 3) {};
+		\node [style=black1] (9) at (12, 3) {};
+		\node [style=none] (12) at (8, 1) {};
+		\node [style=none] (13) at (12, 1) {};
+		\node [style=black1] (14) at (8, -1) {};
+		\node [style=none] (15) at (12, -1) {};
+		\node [style=none] (16) at (9.5, 0) {};
+		\node [style=none] (17) at (0, -7) {};
+		\node [style=none] (18) at (4, -7) {};
+		\node [style=none] (19) at (8, -7) {};
+		\node [style=black1] (20) at (12, -7) {};
+		\node [style=none] (21) at (0, -11) {};
+		\node [style=none] (22) at (4, -11) {};
+		\node [style=none] (23) at (8, -11) {};
+		\node [style=none] (24) at (12, -11) {};
+		\node [style=black1] (25) at (16, -5) {};
+		\node [style=none] (27) at (16, 1) {};
+		\node [style=none] (28) at (16, -1) {};
+		\node [style=black1] (29) at (16, -7) {};
+		\node [style=black1] (30) at (16, -11) {};
+		\node [style=none] (31) at (8, 7) {};
+		\node [style=none] (32) at (12, 7) {};
+		\node [style=none] (33) at (16, 7) {};
+		\node [style=none] (34) at (18, 7) {};
+		\node [style=none] (35) at (18, 1) {};
+		\node [style=none] (36) at (18, -1) {};
+		\node [style=none] (37) at (18, -5) {};
+		\node [style=none] (38) at (18, -7) {};
+		\node [style=none] (39) at (18, -11) {};
+		\node [style=none] (40) at (-2, 1) {};
+		\node [style=none] (41) at (-2, -1) {};
+		\node [style=none] (43) at (-2, -7) {};
+		\node [style=none] (44) at (-2, -11) {};
+		\node [style=none] (45) at (-2, 7) {};
+		\node [style=none] (46) at (-2, 9) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw [bend left=15] (0) to (16.center);
+		\draw (16.center) to (2);
+		\draw [bend left=15] (16.center) to (5);
+		\draw [bend left=15] (16.center) to (14);
+		\draw [bend right=15, looseness=0.25] (16.center) to (1);
+		\draw [bend left=15] (8) to (16.center);
+		\draw [bend left=15, looseness=0.75] (16.center) to (20);
+		\draw (0) to (1);
+		\draw (8) to (1);
+		\draw (8) to (9);
+		\draw (9) to (25);
+		\draw (3.center) to (2);
+		\draw (3.center) to (31.center);
+		\draw (31.center) to (32.center);
+		\draw (32.center) to (33.center);
+		\draw [bend right=15] (16.center) to (9);
+		\draw [bend right=15, looseness=0.50] (16.center) to (25);
+		\draw (4.center) to (5);
+		\draw (5) to (12.center);
+		\draw (12.center) to (13.center);
+		\draw (13.center) to (27.center);
+		\draw (6.center) to (7.center);
+		\draw (7.center) to (14);
+		\draw (14) to (15.center);
+		\draw (15.center) to (28.center);
+		\draw (29) to (20);
+		\draw (20) to (19.center);
+		\draw (19.center) to (18.center);
+		\draw (18.center) to (17.center);
+		\draw [bend right=15, looseness=0.75] (30) to (16.center);
+		\draw (30) to (24.center);
+		\draw (24.center) to (23.center);
+		\draw (23.center) to (22.center);
+		\draw (22.center) to (21.center);
+		\draw (30) to (39.center);
+		\draw (38.center) to (29);
+		\draw (25) to (37.center);
+		\draw (36.center) to (28.center);
+		\draw (27.center) to (35.center);
+		\draw (34.center) to (33.center);
+		\draw (46.center) to (0);
+		\draw (2) to (45.center);
+		\draw (40.center) to (4.center);
+		\draw (6.center) to (41.center);
+		\draw (43.center) to (17.center);
+		\draw (21.center) to (44.center);
+	\end{pgfonlayer}
+
+
+\draw [dashed] (-3, 5) -- (21,5);
+
+\draw [dashed] (-3, -3) -- (21,-3);
+
+\draw [dashed] (-3, -9) -- (21,-9);
+
+
+
+\end{tikzpicture}
+\end{document}

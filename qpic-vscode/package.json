@@ -1,0 +1,78 @@
+{
+  "name": "qpic-preview",
+  "displayName": "qpic Preview",
+  "description": "Live side-by-side preview for qpic quantum circuit diagrams",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qpic/qpic"
+  },
+  "activationEvents": [
+    "onLanguage:qpic"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "qpic",
+        "extensions": [
+          ".qpic"
+        ],
+        "aliases": [
+          "qpic",
+          "QPic"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "qpic.showPreview",
+        "title": "qpic: Show Preview",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "qpic.showPreview",
+          "when": "resourceExtname == .qpic",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "qpic",
+      "properties": {
+        "qpic.executablePath": {
+          "type": "string",
+          "default": "qpic",
+          "description": "Path to the qpic executable. Must be the CLI tool (not 'python -m qpic'), e.g. 'qpic' or '/usr/local/bin/qpic'."
+        },
+        "qpic.autoRefreshOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically recompile and refresh the preview when a .qpic file is saved."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^3.11.174"
+  }
+}

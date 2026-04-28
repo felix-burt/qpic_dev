@@ -1,0 +1,86 @@
+\documentclass{article}
+\usepackage[pdftex,active,tightpage]{preview}
+\usepackage{tikz}
+%\usepackage{geometry}
+\usetikzlibrary{decorations.pathreplacing,decorations.pathmorphing}
+\begin{document}
+\begin{preview}
+\usetikzlibrary{decorations.pathmorphing}
+\providecommand{\ket}[1]{\left|#1\right\rangle}
+\begin{tikzpicture}[scale=1.000000,x=1pt,y=1pt]
+\filldraw[color=white] (0.000000, -7.500000) rectangle (248.000000, 37.500000);
+% Drawing wires
+% Line 9: x W \alpha\ket{0}+\beta\ket{1}
+\draw[color=black] (0.000000,30.000000) -- (212.000000,30.000000);
+\draw[color=black] (212.000000,29.500000) -- (236.000000,29.500000);
+\draw[color=black] (212.000000,30.500000) -- (236.000000,30.500000);
+\draw[color=black] (0.000000,30.000000) node[left] {$\alpha\ket{0}+\beta\ket{1}$};
+% Line 10: y W \ket{0} color=white
+\draw[color=white] (0.000000,15.000000) -- (9.000000,15.000000);
+\draw[color=black] (9.000000,15.000000) -- (48.000000,15.000000);
+\draw[color=black] (48.000000,14.500000) -- (72.000000,14.500000);
+\draw[color=black] (48.000000,15.500000) -- (72.000000,15.500000);
+\draw[color=white] (0.000000,15.000000) node[left] {$\ket{0}$};
+% Line 11: z W \ket{0} color=white
+\draw[color=white] (0.000000,0.000000) -- (9.000000,0.000000);
+\draw[color=black] (9.000000,0.000000) -- (248.000000,0.000000);
+\draw[color=white] (0.000000,0.000000) node[left] {$\ket{0}$};
+% Done with wires; drawing gates
+% Line 13: y epr z y:color=black z:color=black
+\draw[decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (9.000000,15.000000) -- (9.000000,0.000000);
+\filldraw (9.000000, 15.000000) circle(1.500000pt);
+\filldraw (9.000000, 0.000000) circle(1.500000pt);
+% Line 14: +y x
+\draw (27.000000,30.000000) -- (27.000000,15.000000);
+\begin{scope}
+\draw[fill=white] (27.000000, 15.000000) circle(3.000000pt);
+\clip (27.000000, 15.000000) circle(3.000000pt);
+\draw (24.000000, 15.000000) -- (30.000000, 15.000000);
+\draw (27.000000, 12.000000) -- (27.000000, 18.000000);
+\end{scope}
+\filldraw (27.000000, 30.000000) circle(1.500000pt);
+% Line 15: y M
+\draw[fill=white] (42.000000, 9.000000) rectangle (54.000000, 21.000000);
+\draw[very thin] (48.000000, 15.600000) arc (90:150:6.000000pt);
+\draw[very thin] (48.000000, 15.600000) arc (90:30:6.000000pt);
+\draw[->,>=stealth] (48.000000, 9.600000) -- +(80:10.392305pt);
+% Line 16: z X y:owire
+\draw (71.500000,15.000000) -- (71.500000,0.000000);
+\draw (72.500000,15.000000) -- (72.500000,0.000000);
+\begin{scope}
+\draw[fill=white] (72.000000, -0.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\clip (72.000000, -0.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\draw (72.000000, -0.000000) node {$X$};
+\end{scope}
+\filldraw (72.000000, 15.000000) circle(1.500000pt);
+% Line 18: x z >= $\alpha\ket{00}+\beta\ket{11}$ width=80
+\draw[fill=white,color=white] (90.000000, -6.000000) rectangle (170.000000, 36.000000);
+\draw (130.000000, 15.000000) node {$\alpha\ket{00}+\beta\ket{11}$};
+\draw[decorate,decoration={brace,mirror,amplitude = 4.000000pt},very thick] (90.000000,-6.000000) -- (90.000000,36.000000);
+% Line 21: x H
+\begin{scope}
+\draw[fill=white] (188.000000, 30.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\clip (188.000000, 30.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\draw (188.000000, 30.000000) node {$H$};
+\end{scope}
+% Line 22: x M
+\draw[fill=white] (206.000000, 24.000000) rectangle (218.000000, 36.000000);
+\draw[very thin] (212.000000, 30.600000) arc (90:150:6.000000pt);
+\draw[very thin] (212.000000, 30.600000) arc (90:30:6.000000pt);
+\draw[->,>=stealth] (212.000000, 24.600000) -- +(80:10.392305pt);
+% Line 23: z Z x:owire
+\draw (235.500000,30.000000) -- (235.500000,0.000000);
+\draw (236.500000,30.000000) -- (236.500000,0.000000);
+\begin{scope}
+\draw[fill=white] (236.000000, -0.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\clip (236.000000, -0.000000) +(-45.000000:8.485281pt and 8.485281pt) -- +(45.000000:8.485281pt and 8.485281pt) -- +(135.000000:8.485281pt and 8.485281pt) -- +(225.000000:8.485281pt and 8.485281pt) -- cycle;
+\draw (236.000000, -0.000000) node {$Z$};
+\end{scope}
+\filldraw (236.000000, 30.000000) circle(1.500000pt);
+% Done with gates; drawing ending labels
+\draw[color=black] (248.000000,0.000000) node[right] {$\alpha\ket{0}+\beta\ket{1}$};
+% Done with ending labels; drawing cut lines and comments
+% Done with comments
+\end{tikzpicture}
+\end{preview}
+\end{document}

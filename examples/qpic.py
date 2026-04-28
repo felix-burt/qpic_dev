@@ -76,18 +76,6 @@
 # targets START
 # targets END
 #   targets start or end together, each using their next label
-# target STARTG [control list]
-# target ENDG [control list]
-#   Like START/END, but also draw gate geometry (connector, controls,
-#   target marker) in the same instruction.
-# control target1 target2 ... STARTING
-# control target1 target2 ... ENDING
-#   One-command start/end variants. First wire is control, remaining wires are targets.
-#   STARTING draws chained connector arrows following listed order:
-#     control->target1, target1->target2, ...
-#   ENDING draws chained connector arrows in reverse direction:
-#     ... target2->target1, target1->control
-#   STARTING/ENDING still start/end all listed target wires.
 #   (unlike other gates, this cannot be put in a time-slice
 #    before the most recent gate)
 #
@@ -265,7 +253,7 @@
 
 from __future__ import print_function
 
-import sys, string, copy, math, collections, types, io
+import sys, string, copy, math, collections, types
 
 try: # Python 3.3+
     from collections.abc import Mapping
@@ -286,7 +274,6 @@ def initialize_globals():
     global wires, wires_in_order, declared_wires_in_order, level_stack
     global defined_symbols, new_colors, braces_list, depth_marks
     global new_wire_depth
-    global pm_classical_wires, pm_classical_starts, pm_classical_ends
 
     line_num = 0
 
@@ -323,7 +310,7 @@ def initialize_globals():
         for s2 in ['<', '', '>']:
             EQUALS.append(s1+'='+s2)
 
-    legal_options = ['color', 'length', 'breadth', 'size', 'width', 'height', 'style', 'fill', 'hyperlink', 'type', 'shape', 'operator', 'angle']
+    legal_options = ['color', 'length', 'breadth', 'size', 'width', 'height', 'style', 'fill', 'hyperlink', 'type', 'shape', 'operator']
 
     BARRIER_STYLE="decorate,decoration={zigzag,amplitude=1pt,segment length=4}"
 
@@ -335,9 +322,6 @@ def initialize_globals():
     wires = {}
     wires_in_order = []
     declared_wires_in_order = []
-    pm_classical_wires = set()
-    pm_classical_starts = {}
-    pm_classical_ends = {}
     level_stack = []
     defined_symbols = {}
     for c in ['o', 'c', 'q']:
@@ -394,7 +378,7 @@ def parse_options(word):
             opt = 'length'
         else:
             opt = 'breadth'
-    if opt in ['color', 'fill', 'hyperlink', 'operator', 'angle']:
+    if opt in ['color', 'fill', 'hyperlink', 'operator']:
         val = val_string
     elif opt == 'style':
         val = ' '.join(val_string.split('_')) # _ -> space
@@ -734,10 +718,7 @@ def draw_xor(x,y,options):
         num_sides = 0
         thick_line = ""
     if shape_line:
-        if fillcolor is None:
-            print("\\draw " + shape_line);
-        else:
-            print(("\\draw[fill=%s] " % fillcolor) + shape_line);
+        print(("\\draw[fill=%s] " % fillcolor) + shape_line);
         if thick_line:
             print("\\draw[very thick,solid] " + thick_line)
         print("\\clip " + shape_line);
@@ -767,13 +748,9 @@ def draw_xor(x,y,options):
     print("\\end{scope}")
     
 def draw_control(x,y,size):
-    if size <= 0:
-        return
     print("\\filldraw (%f, %f) circle(%fpt);" % (x,y,0.5*size))
 def draw_negated_control(x,y,size):
     global bgcolor
-    if size <= 0:
-        return
     print("\\draw[fill=%s] (%f, %f) circle(%fpt);" % (bgcolor,x,y,0.5*size))
 def draw_xor_or_control(x,y,options):
     if options['shape'] == 1:
@@ -864,197 +841,6 @@ def draw_measurement(x,y,dx,dy,name=None,style=None,fill='bgcolor'):
         draw_measure_tag(x,y,dx,dy,name,style=style,fill=fill)
     else:
         draw_measure_D(x,y,dx,dy,name,style=style,fill=fill)
-
-def draw_cup(pos, wire_locs, style=None, color=None):
-    global orientation
-    y_positions = [loc for _, loc in wire_locs]
-    top = max(y_positions)
-    bottom = min(y_positions)
-    (x_top, y_top) = get_x_y(pos, top)
-    (x_bot, y_bot) = get_x_y(pos, bottom)
-    depth = 0.6 * GATE_SIZE
-    style_parts = []
-    if style:
-        style_parts.append(style)
-    if color:
-        style_parts.append('color=%s' % color)
-    else:
-        style_parts.append('color=black')
-    if style_parts:
-        style_str = '[' + ','.join(style_parts) + ']'
-    else:
-        style_str = ''
-    if orientation == 'horizontal':
-        print("\\draw%s (%f, %f) .. controls (%f, %f) and (%f, %f) .. (%f, %f);" %
-              (style_str, x_top, y_top, x_top - depth, y_top, x_bot - depth, y_bot, x_bot, y_bot))
-    else:
-        print("\\draw%s (%f, %f) .. controls (%f, %f) and (%f, %f) .. (%f, %f);" %
-              (style_str, x_top, y_top, x_top, y_top + depth, x_bot, y_bot + depth, x_bot, y_bot))
-
-def draw_pauli_measurement(pos, wire_locs, pauli_ops, draw_dial=True, angle_text=None, style=None, fill='bgcolor', color=None):
-    """Draw a Litinski-style Pauli product measurement or rotation.
-    
-    Args:
-        pos: x-position (time coordinate)
-        wire_locs: list of (wire_name, y_location) tuples
-        pauli_ops: dict mapping wire_name to Pauli operator ('X', 'Y', 'Z', or 'I')
-        draw_dial: whether to draw the measurement dial
-        angle_text: optional angle to display inside the dial housing
-        style: optional TikZ style
-        fill: fill color for box
-        color: optional color for box and dial
-    """
-    global bgcolor, orientation
-    if fill == 'bgcolor':
-        fill = bgcolor
-    
-    # Calculate box dimensions
-    y_positions = [loc for _, loc in wire_locs]
-    min_y = min(y_positions)
-    max_y = max(y_positions)
-    box_height = max_y - min_y + GATE_SIZE
-    box_width = GATE_SIZE
-    center_y = 0.5 * (min_y + max_y)
-    
-    # Draw the main box
-    tikz_str = 'fill=%s' % fill
-    if style:
-        tikz_str += ',' + style
-    if color:
-        tikz_str += ',color=%s' % color
-    
-    (x, y) = get_x_y(pos, center_y)
-    (w, h) = get_w_h(box_width, box_height)
-    
-    print("\\draw[%s] (%f, %f) rectangle (%f, %f);" % (tikz_str, x-0.5*w, y-0.5*h, x+0.5*w, y+0.5*h))
-    
-    def _resolve_pauli(wname):
-        if wname in pauli_ops:
-            return pauli_ops[wname]
-        if isinstance(wname, tuple) and wname:
-            prefix = wname[0]
-            nums = [str(n) for n in wname[1:]]
-            if isinstance(prefix, str):
-                if nums:
-                    key1 = prefix + ','.join(nums)
-                    key2 = prefix + '_' + ','.join(nums)
-                    if key1 in pauli_ops:
-                        return pauli_ops[key1]
-                    if key2 in pauli_ops:
-                        return pauli_ops[key2]
-                elif prefix in pauli_ops:
-                    return pauli_ops[prefix]
-        if isinstance(wname, str):
-            desc = string_to_descriptor(wname)
-            if desc in pauli_ops:
-                return pauli_ops[desc]
-        return 'I'
-
-    # Draw Pauli operators on each wire
-    for wname, wire_y in wire_locs:
-        pauli = _resolve_pauli(wname)
-        if pauli != 'I':  # Only draw non-identity operators
-            (px, py) = get_x_y(pos, wire_y)
-            print("\\draw (%f, %f) node {$%s$};" % (px, py, pauli))
-    
-    # Draw measurement dial housing attached to the right side of box
-    cap_radius = 0.1 * box_width
-    housing_width = 0.25 * box_width
-    housing_height = 0.50 * box_width
-    
-    if orientation == 'vertical':
-        # Place housing below the box, rounded on the bottom side
-        housing_left = x - 0.5 * housing_width
-        housing_right = x + 0.5 * housing_width
-        housing_top = y - 0.5 * h
-        housing_bottom = housing_top - housing_height
-        # Draw rectangle with rounded bottom corners and sharp top corners
-        housing_tikz = 'fill=%s,rounded corners=%fpt' % (fill, cap_radius)
-        if style:
-            housing_tikz += ',' + style
-        if color:
-            housing_tikz += ',color=%s' % color
-        print("\\draw[%s] (%f, %f) [rounded corners=%fpt]  -- (%f, %f) [rounded corners=%fpt] -- (%f, %f) [rounded corners=%fpt] -- (%f, %f) [rounded corners=%fpt]  -- cycle;" % 
-              (housing_tikz, housing_left, housing_top, cap_radius, housing_right, housing_top,
-               cap_radius, housing_right, housing_bottom, cap_radius, housing_left, housing_bottom, cap_radius))
-        
-        # Draw meter dial or angle text inside housing
-        if draw_dial:
-            dial_radius = 1.5 * cap_radius
-            dial_center_x = x - cap_radius
-            dial_center_y = housing_top - cap_radius
-            if color:
-                dial_style = ',color=%s' % color
-            else:
-                dial_style = ''
-            # Horizontal orientation: arc from 0 to 60 and 0 to -60
-            print("\\draw[thin%s] (%f, %f) arc (0:60:%fpt);" % 
-                  (dial_style, dial_center_x + dial_radius, dial_center_y, dial_radius))
-            print("\\draw[thin%s] (%f, %f) arc (0:-60:%fpt);" % 
-                  (dial_style, dial_center_x + dial_radius, dial_center_y, dial_radius))
-            # Line at 30 degrees from horizontal (no arrowhead)
-            print("\\draw[thin%s] (%f, %f) -- +(%i:%fpt);" % 
-                  (dial_style, dial_center_x, dial_center_y, 30, dial_radius * math.sqrt(3)))
-        elif angle_text is not None:
-            angle_x = 0.5 * (housing_left + housing_right)
-            angle_y = 0.5 * (housing_top + housing_bottom)
-            print("\\draw (%f, %f) node {\\scalebox{0.5}{%s}};" % (angle_x, angle_y, angle_text))
-    else:
-        # Place housing on the right side of box, rounded on the right side
-        housing_left = x + 0.5 * w
-        housing_right = housing_left + housing_width
-        housing_top = y + 0.5 * housing_height
-        housing_bottom = y - 0.5 * housing_height
-        # Draw rectangle with rounded right corners and sharp left corners
-        housing_tikz = 'fill=%s,rounded corners=%fpt' % (fill, cap_radius)
-        if style:
-            housing_tikz += ',' + style
-        if color:
-            housing_tikz += ',color=%s' % color
-        print("\\draw[%s] (%f, %f) [rounded corners=%fpt]  -- (%f, %f) [rounded corners=%fpt] -- (%f, %f) [sharp corners]-- (%f, %f) [sharp corners]  -- cycle;" % 
-              (housing_tikz, housing_left, housing_top, cap_radius, housing_right, housing_top,
-               cap_radius, housing_right, housing_bottom, housing_left, housing_bottom))
-        
-        # Draw meter dial or angle text inside housing
-        if draw_dial:
-            dial_radius = 1.2 * cap_radius
-            dial_center_x = housing_left + 0.5*cap_radius
-            dial_center_y = y
-            if color:
-                dial_style = ',color=%s' % color
-            else:
-                dial_style = ''
-            # Horizontal orientation: arc from 0 to 60 and 0 to -60
-            print("\\draw[thin%s] (%f, %f) arc (0:60:%fpt);" % 
-                  (dial_style, dial_center_x + dial_radius, dial_center_y, dial_radius))
-            print("\\draw[thin%s] (%f, %f) arc (0:-60:%fpt);" % 
-                  (dial_style, dial_center_x + dial_radius, dial_center_y, dial_radius))
-            # Line at 30 degrees from horizontal (no arrowhead)
-            print("\\draw[thin%s] (%f, %f) -- +(%i:%fpt);" % 
-                  (dial_style, dial_center_x, dial_center_y, 30, dial_radius * math.sqrt(2)))
-        elif angle_text is not None:
-            angle_x = 0.5 * (housing_left + housing_right)
-            angle_y = 0.5 * (housing_top + housing_bottom)
-            print("\\draw (%f, %f) node {\\scalebox{0.5}{%s}};" % (angle_x, angle_y, angle_text))
-    
-def draw_pauli_rotation(pos, wire_locs, pauli_ops, angle_text=None, style=None, fill='bgcolor', color=None):
-    """Draw a Litinski-style Pauli product rotation with angle in the housing."""
-    draw_pauli_measurement(pos, wire_locs, pauli_ops, draw_dial=False, angle_text=angle_text,
-                           style=style, fill=fill, color=color)
-
-def pm_classical_wire_name(wname):
-    """Return a descriptor for the classical output wire associated with a PM target."""
-    if isinstance(wname, int):
-        return ('c', wname)
-    if isinstance(wname, tuple) and wname:
-        if isinstance(wname[0], str):
-            return ('c',) + wname[1:]
-        return ('c', wname)
-    if isinstance(wname, str):
-        desc = string_to_descriptor(wname)
-        if desc is not None:
-            return pm_classical_wire_name(desc)
-    return None
         
 def draw_drop(x,y,dx,dy,name,dir,style=None):
     global bgcolor
@@ -1101,14 +887,6 @@ def make_scope_str(color=None,style=None):
     if style:
         opts.append(style)
     return ",".join(opts)
-
-def is_white_color(color):
-    if color is None:
-        return False
-    normalized = color.strip().lower()
-    if normalized.startswith('{') and normalized.endswith('}'):
-        normalized = normalized[1:-1].strip()
-    return normalized == 'white'
 
 class Depth:
     def __init__(self, depth_to_copy=None, direction=1):
@@ -1348,7 +1126,6 @@ class Wire:
         self.name = name
         self.depth = starting_depth
         self.labels = copy.copy(labels)
-        self.collapse = 0
         self.ellipsis = 0
         if isinstance(self.name,str) and self.name.startswith('...'):
             self.ellipsis = 1
@@ -1419,8 +1196,6 @@ class Wire:
 
     def get_breadth(self):
         global GATE_SIZE, WIRE_PAD
-        if self.collapse:
-            return 0
         if self.specified_breadth != None:
             return self.specified_breadth
         return GATE_SIZE + WIRE_PAD
@@ -1502,10 +1277,7 @@ class Wire:
         transitions.append(wirelen)
         print(self.input_line)
         for i in range(len(transitions) - 1):
-            color = self.get_color(transitions[i])
-            if is_white_color(color):
-                continue
-            tikz_str = 'color=%s' % color
+            tikz_str = 'color=%s' % self.get_color(transitions[i])
             style_str = self.get_style(transitions[i])
             wire_type = self.get_type(transitions[i])
             start_loc = self.location(transitions[i])
@@ -1547,10 +1319,7 @@ class Wire:
             self.draw_start_label(0)
         
     def fix_wire(self, pos1, pos2, tikz_str=None):
-        color = self.get_color(pos1)
-        if is_white_color(color):
-            return
-        big_tikz_str = "color=%s" % color
+        big_tikz_str = "color=%s" % self.get_color(pos1)
         if tikz_str:
             big_tikz_str += "," + tikz_str
         style_str = self.get_style(pos1)
@@ -1720,7 +1489,6 @@ class Gate:
         self.wire_color_changes = {}
         self.wire_style_changes = {}
         self.wire_type_changes = {}
-        self.pm_wire_type_overrides = []
         self.change_to_classical = 0
         self.options = copy.deepcopy(options)
         self.boxes = []
@@ -1758,31 +1526,9 @@ class Gate:
             self.targets = copy.copy(targets)
             self.name = args[0]
             self.controls = []
-        elif self.type in ['PM', 'PR']:  # Pauli measurement or rotation
-            global pm_classical_wires
-            self.targets = copy.copy(targets)
-            if self.type == 'PR':
-                self.controls = copy.copy(args)
-            else:
-                self.controls = []
-            # Parse Pauli operators from args
-            # Format: PM target1:X target2:Y target3:Z
-            # Or use operator= in options for individual wires
-            self.pauli_ops = {}
-            for wname in self.targets:
-                # Check if operator is specified in wire options
-                self.pauli_ops[wname] = options.get('wires', {}).get(wname, {}).get('operator', 'Z')
-            # Angle parameter for rotations
-            self.angle = options.get('angle', None) if self.type == 'PR' else None
-        elif self.type == 'cup':
-            self.targets = copy.copy(targets)
-            self.controls = []
         elif self.type in ['START', 'END']:
             self.targets = copy.copy(targets)
             self.controls = []
-        elif self.type in ['STARTG', 'ENDG', 'STARTING', 'ENDING', 'EPR']:
-            self.targets = copy.copy(targets)
-            self.controls = copy.copy(args)
         elif self.type in ['M','/']:
             if 'operator' in options.keys():
                 self.name = options['operator']
@@ -1829,27 +1575,6 @@ class Gate:
         self.specified_length = length
         self.specified_breadth = breadth
         self.check_wires()
-        if self.type == 'PM':
-            self.pm_classical_outputs = []
-            self.pm_single_target = (len(self.targets) == 1)
-            if not self.pm_single_target:
-                for w in self.targets:
-                    cwire_name = pm_classical_wire_name(w)
-                    if cwire_name is None:
-                        continue
-                    self.pm_classical_outputs.append(cwire_name)
-                    pm_classical_wires.add(cwire_name)
-                    if cwire_name not in wires:
-                        wires[cwire_name] = Wire(cwire_name, new_wire_depth, [], {'type':'o'})
-                        wires[cwire_name].collapse = 1
-                        if w in declared_wires_in_order and cwire_name not in declared_wires_in_order:
-                            idx = declared_wires_in_order.index(w) + 1
-                            declared_wires_in_order.insert(idx, cwire_name)
-                        elif cwire_name not in declared_wires_in_order:
-                            declared_wires_in_order.append(cwire_name)
-                    else:
-                        wires[cwire_name].type_info[0] = 'o'
-                        wires[cwire_name].collapse = 1
         if self.type == 'M': # changing wires
             for w in self.targets:
                 if not options['wires'].get(w,{}).get('type',None):
@@ -1857,8 +1582,8 @@ class Gate:
             self.controls = [] # do not allow controlled measurements
         if self.type == 'IN':
             self.change_wires(self.targets, dict(type='q'), maybe=1)
-        if self.type in ['START', 'STARTG', 'STARTING', 'EPR']:
-            for wn in self.targets + (self.controls if self.type == 'EPR' else []):
+        if self.type == 'START':
+            for wn in self.targets:
                 if wires[wn].start_at_start_of_circuit and not wires[wn].explicit_end_seen:
                     start_type = wires[wn].type_info[0]
                     wires[wn].type_info[0] = 'o'
@@ -1866,9 +1591,9 @@ class Gate:
                     self.change_wires([wn], dict(type=start_type), maybe=1)
                 else:
                     self.change_wires([wn], dict(type='q'), maybe=1)
-        if self.type in ['OUT', 'END', 'ENDG', 'ENDING']:
+        if self.type in ['OUT', 'END']:
             self.change_wires(self.targets, dict(type='o'), maybe=1)
-            if self.type in ['END', 'ENDG', 'ENDING']:
+            if self.type == 'END':
                 for wn in self.targets:
                     wires[wn].explicit_end_seen = 1
         self.pi = None
@@ -1928,12 +1653,6 @@ class Gate:
         if options.get('type', None):
             any_changes = 0
             for wn in wire_names:
-                if wn in pm_classical_wires and options['type'] == 'c':
-                    self.pm_wire_type_overrides.append((wires[wn], 'c'))
-                    continue
-                if wn in pm_classical_wires and options['type'] == 'o':
-                    self.pm_wire_type_overrides.append((wires[wn], 'o'))
-                    pm_classical_ends[wn] = None
                 if (maybe and wires[wn] in self.wire_type_changes):
                     pass
                 else:
@@ -1952,8 +1671,6 @@ class Gate:
         wires_to_use = []
         if self.targets:
             wires_to_use.extend(self.targets)
-        if self.type == 'PM' and hasattr(self, 'pm_classical_outputs'):
-            wires_to_use.extend(self.pm_classical_outputs)
         if self.controls:
             wires_to_use.extend(self.controls)
         if self.boxes:
@@ -1986,14 +1703,12 @@ class Gate:
         self.controls = []
         for w in input_targets:
             (wname, wprefix) = get_wire_name(w)
-            if wname in self.targets:
-                continue
             if wname in box_targets:
                 continue
             self.targets.append(wname)
         for w in input_controls:
             (wname, wprefix) = get_wire_name(w)
-            if (wname in box_targets) or (wname in self.targets) or (wname in self.controls):
+            if (wname in box_targets) or (wname in self.targets):
                 continue
             self.controls.append(wname)
         my_wires = box_targets + self.controls + self.targets
@@ -2006,13 +1721,6 @@ class Gate:
         for g in my_wires:
             if self.options['wires'].get(g,None):
                 self.change_wires([g], self.options['wires'][g])
-        # Ensure owire applies to PM-generated classical wires
-        for wname, wopts in self.options['wires'].items():
-            if not wopts:
-                continue
-            norm_name = get_wire_name(wname, return_prefix=0, create_wire=0)
-            if wopts.get('type', None) == 'o' and norm_name in pm_classical_wires:
-                self.change_wires([norm_name], {'type': 'o'})
                 
     def min_and_max_wires(self, pos, quantum_only = 0):
         global circuit_bottom, circuit_top
@@ -2051,7 +1759,6 @@ class Gate:
         self.options['attach_to'] = g
         
     def set_position(self, pos, direction=1):
-        global pm_classical_starts, pm_classical_ends
         for w in self.wire_color_changes:
             if direction == 1:
                 new_color = self.wire_color_changes[w]
@@ -2070,52 +1777,6 @@ class Gate:
             else: # undo change
                 new_type = w.get_type(self.position_list[0][0] - 0.001)
             w.change_type(pos, new_type)
-        if self.type == 'cup':
-            for wn in self.targets:
-                w = wires[wn]
-                if direction == 1:
-                    w.change_color(pos, 'black')
-                else:
-                    prev_color = w.get_color(self.position_list[0][0] - 0.001)
-                    w.change_color(pos, prev_color)
-        if self.type == 'PM' and hasattr(self, 'pm_classical_outputs'):
-            target_locs = [wires[t].location(pos) for t in self.targets]
-            center_y = 0.5 * (min(target_locs) + max(target_locs))
-            if getattr(self, 'pm_single_target', False):
-                qwire = wires[self.targets[0]]
-                if direction == 1:
-                    qwire.change_type(pos, 'c')
-                else:
-                    prev_type = qwire.get_type(self.position_list[0][0] - 0.001)
-                    qwire.change_type(pos, prev_type)
-            if not getattr(self, 'pm_single_target', False):
-                for cwire_name in self.pm_classical_outputs:
-                    if cwire_name in wires:
-                        if direction == 1:
-                            pm_classical_starts[cwire_name] = (pos, center_y)
-                            wires[cwire_name].set_location(center_y, pos)
-                        else:
-                            prev_loc = wires[cwire_name].location(self.position_list[0][0] - 0.001)
-                            wires[cwire_name].set_location(prev_loc, pos)
-        if self.pm_wire_type_overrides:
-            for w, forced_type in self.pm_wire_type_overrides:
-                if w.name in pm_classical_starts:
-                    start_pos, start_loc = pm_classical_starts[w.name]
-                    if direction == 1:
-                        w.set_location(start_loc, start_pos)
-                        if forced_type == 'o':
-                            w.change_type(start_pos, 'c')
-                            pm_classical_ends[w.name] = pos
-                            w.change_type(pos, 'o')
-                        else:
-                            w.change_type(start_pos, forced_type)
-                    else:
-                        prev_type = w.get_type(self.position_list[0][0] - 0.001)
-                        w.change_type(start_pos, prev_type)
-        for wname, end_pos in list(pm_classical_ends.items()):
-            if end_pos is not None and direction == 1:
-                if wname in wires:
-                    wires[wname].change_type(end_pos, 'o')
         if self.type == 'PERMUTE':
             start_pos = pos - 0.5*self.get_length()
             end_pos = pos + 0.5*self.get_length()
@@ -2202,7 +1863,7 @@ class Gate:
                 my_depth = max(self.max_depth(), last_depth)
             else:
                 my_depth = 1 + self.max_depth()
-                if self.type in ['START','END','STARTG','ENDG','STARTING','ENDING','EPR'] and my_depth < last_depth:
+                if self.type in ['START','END'] and my_depth < last_depth:
                     my_depth = last_depth
                 while ((my_depth < overall_depth) and not allow_different_gates and not self.match(master_depth_list[my_depth])):
                     my_depth += 1
@@ -2218,7 +1879,7 @@ class Gate:
             return self.specified_length
         if self.type in ['PHANTOM', 'TOUCH']:
             return 0
-        if self.type in ['LABEL', 'START', 'END', 'STARTG', 'ENDG', 'STARTING', 'ENDING', 'EPR', 'PERMUTE'] + EQUALS:
+        if self.type in ['LABEL', 'START', 'END', 'PERMUTE'] + EQUALS:
             return 15 # maybe not wide enough
         if self.type == '/':
             return GATE_SIZE * (2.0/3.0)
@@ -2230,7 +1891,7 @@ class Gate:
             for box in self.boxes:
                 the_length = max(the_length, box.get_length())
             return the_length
-        if self.type in ['M', 'PM', 'PR', 'cup']:
+        if self.type in ['M']:
             return GATE_SIZE
         if self.change_to_classical:
             return GATE_SIZE
@@ -2286,9 +1947,9 @@ class Gate:
                     for (start, end) in wire_ranges:
                         print(draw_command + " (%f,%f) -- (%f,%f);" % (get_x_y(pos,start) + get_x_y(pos,end)))
             elif self.type == 'LABEL':
-                tikz_str = ""
+                tikz_str = "fill=%s" % bgcolor
                 if orientation == 'vertical':
-                    tikz_str = "rotate around={-90:(0,0)}"
+                    tikz_str += ", rotate around={-90:(0,0)}"
                 for i in range(len(self.targets)):
                     wires[self.targets[i]].draw_label(pos, self.labels[i], tikz_str)
             elif self.type in EQUALS:
@@ -2311,50 +1972,7 @@ class Gate:
                     draw_breadthwise_brace(start_loc, end_loc, pos + 0.5*self.get_length() - delta, delta)
             else:
                 # make the wire
-                if self.type in ['STARTING', 'ENDING', 'EPR']:
-                    draw_command = "\\draw"
-                    if self.type == 'STARTING':
-                        arrow_style = '->'
-                    elif self.type == 'ENDING':
-                        arrow_style = '->'
-                    else:
-                        arrow_style = None  # EPR is symmetric; no arrow
-                    draw_opts = []
-                    if self.style:
-                        draw_opts.append(self.style)
-                        if ('decorate' in self.style) and ('decoration={' in self.style) and ('pre length=' not in self.style):
-                            draw_opts.append('pre length=0.6mm')
-                    if arrow_style and (not self.style or arrow_style not in self.style):
-                        draw_opts.append(arrow_style)
-                    if draw_opts:
-                        draw_command += "[%s]" % ",".join(draw_opts)
-                    if self.controls:
-                        chain_names = [self.controls[0]] + self.targets
-                    else:
-                        # Can happen if control and target normalize to the same wire.
-                        # In that case, there is no connector segment to draw.
-                        chain_names = list(self.targets)
-                    n_segments = len(chain_names) - 1
-                    for i in range(n_segments):
-                        a_loc = wires[chain_names[i]].location(pos)
-                        b_loc = wires[chain_names[i+1]].location(pos)
-                        if self.type == 'STARTING':
-                            start_loc = a_loc
-                            end_loc = b_loc
-                        else:
-                            start_loc = b_loc
-                            end_loc = a_loc
-                        segment_pos = pos
-                        print(draw_command + " (%f,%f) -- (%f,%f);" % (get_x_y(segment_pos, start_loc) + get_x_y(segment_pos, end_loc)))
-                elif self.type in ['STARTG', 'ENDG']:
-                    minw, maxw = self.min_and_max_wires(pos)
-                    top = maxw.location(pos)
-                    bottom = minw.location(pos)
-                    draw_command = "\\draw"
-                    if self.style:
-                        draw_command += "[%s]" % self.style
-                    print(draw_command + " (%f,%f) -- (%f,%f);" % (get_x_y(pos, top) + get_x_y(pos, bottom)))
-                elif self.type not in ['M','/','START','END','cup']:
+                if self.type not in ['M','/','START','END']:
                     minw, maxw = self.min_and_max_wires(pos)
                     top = maxw.location(pos)
                     bottom = minw.location(pos)
@@ -2405,82 +2023,37 @@ class Gate:
                     target = self.targets[0]
                     (x,y) = get_x_y(pos, wires[target].location(pos))
                     draw_drop(x,y,width, height, self.name,thick_side,style=self.style)
-                elif self.type in ['START','END','STARTG','ENDG','STARTING','ENDING','EPR']:
-                    if self.type in ['START', 'STARTG', 'STARTING', 'EPR']:
+                elif self.type in ['START','END']:
+                    if self.type == 'START':
                         forward = 1
                     else:
                         forward = -1
                     forward *= dir
-                    label_extra = 0
-                    if self.type in ['STARTG', 'ENDG', 'STARTING', 'ENDING', 'EPR']:
-                        # Keep labels a bit farther from the gate body/connector.
-                        label_extra = 0.6 * self.get_length()
-                    all_starting_wires = self.targets + (self.controls if self.type == 'EPR' else [])
-                    for target in all_starting_wires:
+                    for target in self.targets:
                         if forward == 1:
-                            wires[target].draw_start_label(pos + 0.5*self.get_length() - label_extra,
-                                                           length=self.get_length())
+                            wires[target].draw_start_label(pos + 0.5*self.get_length(), "fill=%s" % bgcolor,length=self.get_length())
                         else:
-                            wires[target].draw_end_label(pos - 0.5*self.get_length() + label_extra,
-                                                         length=self.get_length())
-                        if self.type == 'EPR':
-                            # Both wires get a filled control dot.
-                            (x,y) = get_x_y(pos, wires[target].location(pos))
-                            draw_options = get_draw_options(self.options, target, '.')
-                            draw_options['direction'] = dir
+                            wires[target].draw_end_label(pos - 0.5*self.get_length(), "fill=%s" % bgcolor,length=self.get_length())
+                elif self.type in ['N', 'M','/']:
+                    for target in self.targets:
+                        (x,y) = get_x_y(pos, wires[target].location(pos))
+                        if self.type == 'N':
+                            draw_options = get_draw_options(self.options, target, '+')
                             draw_xor_or_control(x,y,draw_options)
-                        elif self.type in ['STARTG', 'ENDG', 'STARTING', 'ENDING']:
-                            wire_opts = self.options['wires'].get(target, {})
-                            explicit_marker = False
-                            for key in ['shape', 'operator', 'size']:
-                                if key in wire_opts or key in self.options:
-                                    explicit_marker = True
-                                    break
-                            # By default, STARTG/ENDG rely on line style (e.g., ->, <-)
-                            # for arrow semantics and do not draw an extra target marker.
-                            if explicit_marker:
-                                (x,y) = get_x_y(pos, wires[target].location(pos))
-                                draw_options = get_draw_options(self.options, target, '+')
-                                draw_options['direction'] = dir
-                                draw_xor_or_control(x,y,draw_options)
-                elif self.type in ['N', 'M', 'PM', 'PR', '/', 'cup']:
-                    if self.type == 'PM':
-                        # Draw Litinski-style Pauli product measurement
-                        wire_locs = [(target, wires[target].location(pos)) for target in self.targets]
-                        draw_pauli_measurement(pos, wire_locs, self.pauli_ops,
-                                             style=self.style, fill=self.fill, color=self.color)
-                    elif self.type == 'PR':
-                        # Draw Litinski-style Pauli product rotation with angle
-                        wire_locs = [(target, wires[target].location(pos)) for target in self.targets]
-                        draw_pauli_rotation(pos, wire_locs, self.pauli_ops, angle_text=self.angle,
-                                           style=self.style, fill=self.fill, color=self.color)
-                    elif self.type == 'cup':
-                        wire_locs = [(target, wires[target].location(pos)) for target in self.targets]
-                        draw_cup(pos, wire_locs, style=self.style, color=self.color)
-                    else:
-                        for target in self.targets:
-                            (x,y) = get_x_y(pos, wires[target].location(pos))
-                            if self.type == 'N':
-                                draw_options = get_draw_options(self.options, target, '+')
-                                draw_xor_or_control(x,y,draw_options)
-                            elif self.type == 'M':
-                                draw_measurement(x,y, width, height, name=self.name, style=self.style, fill=self.fill)
-                            elif self.type == '/':
-                                draw_slash(x,y,width,height,name=self.name,style=self.style)
+                        elif self.type == 'M':
+                            draw_measurement(x,y, width, height, name=self.name, style=self.style, fill=self.fill)
+                        elif self.type == '/':
+                            draw_slash(x,y,width,height,name=self.name,style=self.style)
                 elif not self.boxes:
                     assert 0, 'unknown type %s' % self.type
                 # draw controls
                 for wn in self.controls:
                     (x,y) = get_x_y(pos, wires[wn].location(pos))
                     draw_options = get_draw_options(self.options, wn, '.')
-                    if self.type in ['STARTING', 'ENDING']:
-                        control_opts = self.options['wires'].get(wn, {})
-                        if ('size' not in control_opts) and ('size' not in self.options):
-                            draw_options['size'] = 0
                     draw_options['direction'] = dir
                     draw_xor_or_control(x,y,draw_options)
                 # did we implicitly measure any wires?
-                if self.type not in ['M','/','IN','OUT','START','END','STARTG','ENDG','STARTING','ENDING','EPR','PM','PR'] and self.change_to_classical:
+                if self.type not in ['M','/','IN','OUT','START','END'] and self.change_to_classical:
                     for w in list(self.wire_type_changes.keys()):
                         if self.wire_type_changes[w] == 'c' and w.name not in fixed_wires:
                             (x,y) = get_x_y(pos, w.location(pos))
@@ -2543,7 +2116,7 @@ def do_one_depth(gate_list, start_pos):
         gate.fix_targets()
         if gate.type == 'TOUCH':
             continue
-        if gate.type in ['M', 'PM', '/', 'LABEL', 'PHANTOM']:
+        if gate.type in ['M','/','LABEL','PHANTOM']:
             the_names = copy.copy(gate.targets)
         else:
             minw, maxw = gate.min_and_max_wires(current_pos)
@@ -2691,38 +2264,9 @@ def print_circuit(circuit_length, cut_lines):
     for col in new_colors:
         print("\\definecolor{%s}{rgb}{%s,%s,%s}" % (col[0], col[1], col[2], col[3]))
     print("\\begin{tikzpicture}[scale=%f,x=1pt,y=1pt]" % overall_scale)
-    if not is_white_color(bgcolor):
-        print("\\filldraw[color=%s] (%f, %f) rectangle (%f, %f);" % ((bgcolor,) + get_x_y(0, circuit_bottom) + get_x_y(circuit_length, circuit_top)))
+    print("\\filldraw[color=%s] (%f, %f) rectangle (%f, %f);" % ((bgcolor,) + get_x_y(0, circuit_bottom) + get_x_y(circuit_length, circuit_top)))
     for pre in pretikz_list:
         print(pre)
-    # draw highlight regions first so wires and gates render on top
-    print("% Drawing highlight regions")
-    for (start, end, targets, comment0, comment1, input_line, brace_options) in braces_list:
-        has_region = brace_options.get('style', None) or brace_options.get('fill', None)
-        if not has_region:
-            continue
-        start_pos = master_depth_list[start].start_position + 0.5*DEPTH_PAD
-        end_pos = master_depth_list[end].end_position - 0.5*DEPTH_PAD
-        if targets:
-            tops = []
-            bottoms = []
-            for wn in targets:
-                if wn in wires:
-                    wname = wn
-                else:
-                    wname = get_wire_name(wn, return_prefix=0, create_wire=0)
-                    if not wname:
-                        sys.exit("Error:  Line %i:  Unknown wire %s" % (line_num, wn))
-                tops.append(wires[wname].location(start_pos) + 0.5*wires[wname].get_breadth())
-                bottoms.append(wires[wname].location(start_pos) - 0.5*wires[wname].get_breadth())
-            top_location = max(tops)
-            bottom_location = min(bottoms)
-        else:
-            top_location = circuit_top
-            bottom_location = circuit_bottom
-        corner1 = get_x_y(start_pos, top_location)
-        corner2 = get_x_y(end_pos, bottom_location)
-        draw_highlight_region(corner1, corner2, brace_options)
     # draw in the wires
     print("% Drawing wires")
     # sort the wires so different versions of python have the same wire order
@@ -2733,8 +2277,7 @@ def print_circuit(circuit_length, cut_lines):
     print("% Done with wires; drawing gates")
     pending_list = []
     for d in master_depth_list:
-        ordered_gates = [g for g in d.gate_list if g.type != 'PM'] + [g for g in d.gate_list if g.type == 'PM']
-        for g in ordered_gates:
+        for g in d.gate_list:
             if g.ready_to_draw():
                 g.draw_gate()
                 if pending_list:
@@ -2785,6 +2328,9 @@ def print_circuit(circuit_length, cut_lines):
             top_location = circuit_top
             bottom_location = circuit_bottom
         if brace_options.get('style', None) or brace_options.get('fill', None):
+            corner1 = get_x_y(start_pos, top_location)
+            corner2 = get_x_y(end_pos, bottom_location)
+            draw_highlight_region(corner1, corner2, brace_options)
             delta = 0
         else:
             delta = BRACE_AMPLITUDE
@@ -2798,6 +2344,10 @@ def print_circuit(circuit_length, cut_lines):
                 draw_brace(start_pos, end_pos, bottom_location, -delta, color=brace_color)
             (x,y) = get_x_y(0.5*(start_pos + end_pos), bottom_location - delta)
             draw_comment(comment1, x, y, directions[1], color=brace_color)
+        if brace_options.get('style', None) or brace_options.get('fill', None):
+            corner1 = get_x_y(start_pos, top_location)
+            corner2 = get_x_y(end_pos, bottom_location)
+            draw_highlight_region(corner1, corner2, brace_options)
     print("% Done with comments")
     for post in posttikz_list:
         print(post)
@@ -3209,7 +2759,7 @@ def process_one_command(words, line_options, gate_options, comment0, comment1):
         pos = 0
         while pos < len(words):
             word = words[pos]
-            if word in ['W', 'T', 'C', 'N', 'X', 'H', 'Z', 'LABEL', 'PHANTOM', 'M', 'PM', 'PR', 'IN', 'OUT', 'SWAP', '/', 'TOUCH', 'BARRIER', 'START', 'END', 'STARTG', 'ENDG', 'STARTING', 'ENDING', 'EPR', 'PERMUTE', '@', 'cphase', 'cup'] + EQUALS:
+            if word in ['W', 'T', 'C', 'N', 'X', 'H', 'Z', 'LABEL', 'PHANTOM', 'M', 'IN', 'OUT', 'SWAP', '/', 'TOUCH', 'BARRIER', 'START', 'END', 'PERMUTE', '@'] + EQUALS:
                 gate_type = word
                 controls = words[pos+1:]
                 if boxes:
@@ -3296,26 +2846,6 @@ def process_one_command(words, line_options, gate_options, comment0, comment1):
         #    if len(targets) != 0:
         #        sys.exit("Error:  Line %i: should not be target to %s\n" % (line_num, gate_type))
         #    gate_type = 'N'
-        if gate_type == 'cphase':
-            angle_text = line_options.get('angle', '')
-            if angle_text:
-                mark_text = angle_text
-            else:
-                mark_text = ''
-            cphase_style = "postaction={decoration={markings,mark=at position 0.45 with {\\node[circle, draw, fill=white, inner sep=0.8pt, font=\\tiny] {%s};}},decorate}" % mark_text
-            if line_options.get('style', None):
-                line_options['style'] = cphase_style + "," + line_options['style']
-            else:
-                line_options['style'] = cphase_style
-            # cphase is a line between controls
-            controls = copy.copy(targets) + controls
-            targets = []
-            gate_type = 'N'
-        if gate_type == 'cup':
-            if len(controls) != 0:
-                sys.exit("Error:  Line %i: cup should have no controls\n" % line_num)
-            if len(targets) != 2:
-                sys.exit("Error:  Line %i: cup should have exactly two targets\n" % line_num)
         if gate_type == 'SWAP':
             if len(targets) != 2:
                 sys.exit("Error:  Line %i: SWAP should have exactly two targets\n" % line_num)
@@ -3342,15 +2872,6 @@ def process_one_command(words, line_options, gate_options, comment0, comment1):
                 sys.exit("Error:  Line %i: should not be control to %s\n" % (line_num, gate_type))
         elif gate_type in ['X', 'H', 'Z', 'P', 'IN', 'OUT'] and len(targets) != 1:
             sys.exit("Error:  Line %i: need exactly one target to %s gate\n" % (line_num, gate_type))
-        elif gate_type in ['STARTING', 'ENDING', 'EPR']:
-            if len(controls) != 0:
-                sys.exit("Error:  Line %i: %s should not have controls after gate name\n" % (line_num, gate_type))
-            if len(targets) < 2:
-                sys.exit("Error:  Line %i: %s needs at least two wires: control target1 [target2 ...]\n" % (line_num, gate_type))
-            if gate_type == 'EPR' and len(targets) != 2:
-                sys.exit("Error:  Line %i: EPR takes exactly two wires\n" % line_num)
-            controls = [targets[0]]
-            targets = targets[1:]
         elif gate_type == 'PERMUTE' and len(targets) < 2:
             sys.exit("Error: Line %i: PERMUTE should have at least two targets\n" % line_num)
         if gate_type in ['X', 'H', 'Z']: # convert to boxes
@@ -3368,21 +2889,6 @@ def process_one_command(words, line_options, gate_options, comment0, comment1):
 
 def main(infile=sys.stdin):
     initialize_globals()
-    default_commands = """PREAMBLE \\usetikzlibrary{decorations.pathmorphing,decorations.markings}
-PREAMBLE \\providecommand{\\ket}[1]{\\left|#1\\right\\rangle}
-DEFINE epr style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
-DEFINE start1 style=->,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}
-DEFINE start2 style=<-,decorate,decoration={snake,amplitude=.4mm,segment length=2mm,pre length=1mm}
-a b DEFINE epr a b EPR style=decorate,decoration={snake,amplitude=.4mm,segment length=2mm}
-a b DEFINE starting a b STARTING style=decorate,decoration={snake,amplitude=.4mm,segment length=1.8mm, post length=0.5mm, pre length=0.5mm}
-a b DEFINE ending a b ENDING style=decorate,decoration={snake,amplitude=.4mm,segment length=1.8mm, post length=0.5mm, pre length=0.5mm}
-a b DEFINE starting_down a b starting
-a b DEFINE starting_up a b starting
-a b DEFINE ending_up a b ending
-a b DEFINE ending_down a b ending
-"""
-    for (words, line_options, gate_options, comment0, comment1) in get_command_from_file(io.StringIO(default_commands)):
-        process_one_command(words, line_options, gate_options, comment0, comment1)
     for (words, line_options, gate_options, comment0, comment1) in get_command_from_file(infile):
         process_one_command(words, line_options, gate_options, comment0, comment1)
     # ready to end circuit
